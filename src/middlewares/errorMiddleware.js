@@ -1,4 +1,4 @@
-import responseError from "../exceptions/responseError.js"
+import responseError from "../exceptions/appError.js"
 
 const errorMiddleware = (err, req, res, next) => {
   console.error(`[errorMiddleware] - Error: ${err}`)

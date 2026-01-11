@@ -2,9 +2,12 @@ import jwt from "jsonwebtoken"
 import config from "../config/config.js"
 
 const signToken = (payload) => {
-  return jwt.sign(payload, config.jwtSecret, {
-    expiresIn: config.jwtExpiredIn,
-  })
+  return jwt.sign({
+    id: payload.id,
+    role: payload.role,
+  },
+    config.jwtSecret
+  )
 }
 
 const verifyToken = (token) => {
