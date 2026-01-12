@@ -10,10 +10,10 @@ const findByEmail = async (email) => {
   return result.rows
 }
 
-const create = async (email, password, roles) => {
+const create = async (email, password, role) => {
   const query = {
-    text: `INSERT INTO users (email, password, roles) VALUES ($1, $2, $3)`,
-    values: [email, password, roles]
+    text: `INSERT INTO users (email, password, role) VALUES ($1, $2, $3)`,
+    values: [email, password, role]
   }
   await pool.query(query)
 }

@@ -1,4 +1,5 @@
 import config from "../config/config.js";
+import * as crypto from "node:crypto";
 
 const hashPassword = async (password) => {
   const salt = crypto.randomBytes(config.bcryptSalt).toString("hex")

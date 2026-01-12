@@ -1,4 +1,4 @@
-export class AppError extends Error {
+class AppError extends Error {
   constructor(message, statusCode = 500) {
     super(message);
 
@@ -9,3 +9,5 @@ export class AppError extends Error {
     Error.captureStackTrace(this);
   }
 }
+
+export default AppError;

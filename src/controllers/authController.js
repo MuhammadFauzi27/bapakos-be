@@ -17,8 +17,8 @@ const login = async (req, res, next) => {
 
 const register = async (req, res, next) => {
   try {
-    const { email, password, roles } = req.body;
-    await authService.register(email, password, roles);
+    const { email, password, role } = req.body;
+    await authService.register(email, password, role);
 
     res.status(201).send({
       message: "Register success",

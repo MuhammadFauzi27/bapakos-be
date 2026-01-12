@@ -20,6 +20,4 @@ pool.on('error', () => {
   console.log('Database Error');
 });
 
-export default {
-  pool
-};
+export default pool;

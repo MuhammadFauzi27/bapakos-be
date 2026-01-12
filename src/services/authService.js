@@ -1,5 +1,5 @@
 import authRepository from "../database/repositories/authRepository.js"
-import { AppError } from "../exceptions/appError.js"
+import AppError from "../exceptions/appError.js"
 import passwordUtils from "../utils/password.js"
 import regexExp from "../utils/regexExp.js"
 import jwt from "../utils/jwt.js"
@@ -23,11 +23,11 @@ const login = async (email, password) => {
   }
 }
 
-const register = async (email, password, roles) => {
+const register = async (email, password, role) => {
   if (!regexExp.isValidEmail(email)) throw new AppError("Alamat email tidak sah", 400)
 
   const hashedPassword = await passwordUtils.hashPassword(password)
-  await authRepository.create(email, hashedPassword, roles)
+  await authRepository.create(email, hashedPassword, role)
 }
 
 export default {
