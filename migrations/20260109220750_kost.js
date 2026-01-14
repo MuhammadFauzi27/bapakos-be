@@ -10,13 +10,22 @@ export const shorthands = undefined;
  */
 
 export const up = (pgm) => {
-  pgm.createType("user_role", ["LANDLORD", "TENANT"])
+  pgm.createType("facilities_option", [
+    "WIFI",
+    "AC",
+    "ENSUITE_BATHROOM",
+    "SHARED_BATHROOM"
+  ])
 
-  pgm.createTable('users', {
+  pgm.createTable('kost', {
     id: "id",
-    email: { type: "VARCHAR(100)", notNull: true, unique: true },
-    password: { type: "VARCHAR(255)", notNull: true },
-    role: { type: "user_role", notNull: true, default: "TENANT" },
+    landlord_id: { type: "id", notNull: true, references: 'users(id)', onDelete: 'CASCADE' },
+    name: { type: "VARCHAR(255)", notNull: true },
+    price: { type: "INTEGER", notNull: true },
+    description: { type: "TEXT", notNull: true },
+    location: { type: "TEXT", notNull: true },
+    facilities: { type: "facilities_option", nullable: true  },
+    total_rooms: { type: "INTEGER", notNull: true },
     created_at: { type: 'timestamp', notNull: true, default: pgm.func('now()') },
     updated_at: { type: 'timestamp', notNull: true, default: pgm.func('now()') },
   })
@@ -29,6 +38,6 @@ export const up = (pgm) => {
  */
 
 export const down = (pgm) => {
-  pgm.dropTable('users')
-  pgm.dropType("user_role")
+  pgm.dropTable('koat')
+  pgm.dropType("facilities_option")
 };

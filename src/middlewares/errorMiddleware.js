@@ -8,7 +8,7 @@ const errorMiddleware = (err, req, res, next) => {
   }
 
   if (err instanceof appError) {
-    res.status(err.status).json({
+    res.status(err?.status || 500).json({
       success: false,
       code: err.status,
       message: err.track,

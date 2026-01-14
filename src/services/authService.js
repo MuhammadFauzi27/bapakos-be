@@ -11,7 +11,7 @@ const login = async (email, password) => {
   if (!result) throw new AppError("User tidak ditemukan", 404)
 
   const samePassword = await passwordUtils.verifyPassword(result.password, password)
-  if (!samePassword) throw new AppError("Password atau Email salah", 400)
+  if (samePassword) throw new AppError("Password atau Email salah", 400)
 
   const payload = {
     id: result.id,

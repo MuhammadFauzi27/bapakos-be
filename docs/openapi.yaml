@@ -25,10 +25,10 @@ paths:
                 role:
                   type: string
                   enum:
-                    - USER
+                    - LANDLORD
                     - TENANT
                   description: Role user
-                  example: USER
+                  example: TENANT
       responses:
         201:
           description: Register success
@@ -57,3 +57,231 @@ paths:
                 properties:
                   token:
                     type: string
+
+  /landlord/dashboard/{userId}:
+    get:
+      summary: Get all data in landlord dashboard
+      tags: [ Landlord ]
+      parameters:
+        - name: userId
+          in: header
+          required: true
+          description: ID landlord
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Get dashboard data success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalRevenue:
+                    type: integer
+                  totalKost:
+                    type: integer
+                  transactionTotal:
+                    type: integer
+                  kost:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        landlordId:
+                          type: string
+                        name:
+                          type: string
+                        price:
+                          type: integer
+                        description:
+                          type: string
+                        location:
+                          type: string
+                        facility:
+                          type: array
+                          items:
+                            type: string
+                        totalRooms:
+                          type: integer
+  /landlord/dashboard/kost/:
+    post:
+      summary: Create new kost for landlord
+      tags: [ Landlord ]
+      parameters:
+        - name: userId
+          in: header
+          required: true
+          description: ID landlord
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                price:
+                  type: integer
+                description:
+                  type: string
+                location:
+                  type: string
+                facilities:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        201:
+          description: Create kost success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  kostId:
+                    type: string
+  /landlord/dashboard/kost/files/{userId}/{kostId}:
+    post:
+      summary: Send images for kost
+      tags: [ Landlord ]
+      parameters:
+        - name: kostId
+          in: path
+          required: true
+          description: ID kost
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: header
+          required: true
+          description: ID landlord
+          schema:
+            type: string
+            format: uuid
+      responses:
+  /landlord/dashboard/kost?=:
+    get:
+      summary: Search kost by key
+      tags: [ Landlord ]
+      parameters:
+        - name: userId
+          in: header
+          required: true
+          description: ID landlord
+          schema:
+            type: string
+            format: uuid
+        - name: search key
+          in: query
+          required: true
+          description: Search kost by name
+          schema:
+            type: string
+      responses:
+  /landlord/dashboard/kost/{kostId}:
+    patch:
+      summary: Update kost
+      tags: [ Landlord ]
+      parameters:
+        - name: userId
+          in: header
+          required: true
+          description: ID landlord
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+      responses:
+        200:
+          description: Login success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+    delete:
+      summary: Delete by kost id
+      tags: [ Landlord ]
+      parameters:
+        - name: userId
+          in: header
+          required: true
+          description: ID landlord
+          schema:
+            type: string
+            format: uuid
+      responses:
+    get:
+      summary: Get by kost id
+      tags: [ Landlord ]
+      parameters:
+        - name: userId
+          in: header
+          required: true
+          description: ID landlord
+          schema:
+            type: string
+            format: uuid
+      responses:
+
+  /landlord/transaction:
+    get:
+      summary: Get all transaction
+      tags: [ Landlord ]
+      parameters:
+        - name: userId
+          in: header
+          required: true
+          description: ID landlord
+          schema:
+            type: string
+            format: uuid
+      responses:
+  /landlord/transaction/booking?=:
+    get:
+      summary: Search transaction
+      tags: [ Landlord ]
+      parameters:
+        - name: userId
+          in: header
+          required: true
+          description: ID landlord
+          schema:
+            type: string
+            format: uuid
+      responses:
+  /landlord/transaction/booking/{kostId}:
+    patch:
+      summary: Edit booking status
+      tags: [ Landlord ]
+      parameters:
+        - name: userId
+          in: header
+          required: true
+          description: ID landlord
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:

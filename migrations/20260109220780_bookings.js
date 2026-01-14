@@ -10,13 +10,20 @@ export const shorthands = undefined;
  */
 
 export const up = (pgm) => {
-  pgm.createType("user_role", ["LANDLORD", "TENANT"])
+  pgm.createType("booking_status", [
+    "PENDING",
+    "APPROVED",
+    "REJECTED",
+    "CANCELLED",
+    "COMPLETED"
+  ])
 
-  pgm.createTable('users', {
+  pgm.createTable('rooms', {
     id: "id",
-    email: { type: "VARCHAR(100)", notNull: true, unique: true },
-    password: { type: "VARCHAR(255)", notNull: true },
-    role: { type: "user_role", notNull: true, default: "TENANT" },
+    room_id: { type: "id", notNull: true, references: 'rooms(id)', onDelete: 'CASCADE' },
+    tenant_id: { type: "id", notNull: true, references: 'users(id)', onDelete: 'CASCADE' },
+    kost_price: { type: "INTEGER", notNull: true, references: 'kost(price)', onDelete: 'CASCADE' },
+    status: { type: "room_status", notNull: true, default: "AVAILABLE" },
     created_at: { type: 'timestamp', notNull: true, default: pgm.func('now()') },
     updated_at: { type: 'timestamp', notNull: true, default: pgm.func('now()') },
   })
@@ -29,6 +36,6 @@ export const up = (pgm) => {
  */
 
 export const down = (pgm) => {
-  pgm.dropTable('users')
-  pgm.dropType("user_role")
+  pgm.dropTable('bookings')
+  pgm.dropType("booking_status")
 };
