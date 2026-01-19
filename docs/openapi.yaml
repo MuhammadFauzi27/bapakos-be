@@ -4,7 +4,23 @@ info:
   version: 1.0.0
 
 servers:
-  - url: http://localhost:3000
+  - url: http://localhost:3000/api
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+        code:
+          type: string
 
 paths:
   /auth/register:
@@ -17,11 +33,19 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - email
+                - password
+                - role
               properties:
                 email:
                   type: string
+                  format: email
+                  example: user@example.com
                 password:
                   type: string
+                  minLength: 8
+                  example: password123
                 role:
                   type: string
                   enum:
@@ -32,6 +56,31 @@ paths:
       responses:
         201:
           description: Register success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                    format: uuid
+                  email:
+                    type: string
+                  role:
+                    type: string
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /auth/login:
     post:
       summary: Login user
@@ -42,11 +91,17 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - email
+                - password
               properties:
                 email:
                   type: string
+                  format: email
+                  example: user@example.com
                 password:
                   type: string
+                  example: password123
       responses:
         200:
           description: Login success
@@ -57,14 +112,34 @@ paths:
                 properties:
                   token:
                     type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      email:
+                        type: string
+                      role:
+                        type: string
+                        enum: [LANDLORD, TENANT]
+        401:
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /landlord/dashboard/{userId}:
     get:
       summary: Get all data in landlord dashboard
       tags: [ Landlord ]
+      security:
+        - BearerAuth: []
       parameters:
         - name: userId
-          in: header
+          in: path
           required: true
           description: ID landlord
           schema:
@@ -80,10 +155,16 @@ paths:
                 properties:
                   totalRevenue:
                     type: integer
+                    description: Total revenue dari semua booking
+                    example: 15000000
                   totalKost:
                     type: integer
+                    description: Jumlah kost yang dimiliki
+                    example: 5
                   transactionTotal:
                     type: integer
+                    description: Total jumlah transaksi/booking
+                    example: 25
                   kost:
                     type: array
                     items:
@@ -91,26 +172,55 @@ paths:
                       properties:
                         id:
                           type: string
+                          format: uuid
                         landlordId:
                           type: string
+                          format: uuid
                         name:
                           type: string
+                          example: Kost Pak Budi
                         price:
                           type: integer
+                          example: 1500000
                         description:
                           type: string
+                          example: Kost nyaman dan aman
                         location:
                           type: string
+                          example: Jakarta Selatan
                         facility:
                           type: array
                           items:
                             type: string
+                            enum: [WIFI, AC, ENSUITE_BATHROOM, SHARED_BATHROOM]
+                          example: [WIFI, AC]
                         totalRooms:
                           type: integer
+                          example: 10
+                        images:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              imageUrl:
+                                type: string
+                                example: https://example.com/image1.jpg
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Not a landlord
+        404:
+          description: User not found
+
   /landlord/dashboard/kost/:
     post:
       summary: Create new kost for landlord
       tags: [ Landlord ]
+      security:
+        - BearerAuth: []
       parameters:
         - name: userId
           in: header
@@ -125,19 +235,32 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - name
+                - price
+                - description
+                - location
+                - facilities
               properties:
                 name:
                   type: string
+                  example: Kost Pak Budi
                 price:
                   type: integer
+                  minimum: 0
+                  example: 1500000
                 description:
                   type: string
+                  example: Kost nyaman dekat kampus
                 location:
                   type: string
+                  example: Jakarta Selatan
                 facilities:
                   type: array
                   items:
                     type: string
+                    enum: [WIFI, AC, ENSUITE_BATHROOM, SHARED_BATHROOM]
+                  example: [WIFI, AC]
       responses:
         201:
           description: Create kost success
@@ -148,10 +271,168 @@ paths:
                 properties:
                   kostId:
                     type: string
+                    format: uuid
+                  message:
+                    type: string
+                    example: Kost berhasil dibuat
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Not a landlord
+
+    get:
+      summary: Search kost by key
+      tags: [ Landlord ]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: header
+          required: true
+          description: ID landlord
+          schema:
+            type: string
+            format: uuid
+        - name: search
+          in: query
+          required: false
+          description: Search kost by name
+          schema:
+            type: string
+            example: Pak Budi
+      responses:
+        200:
+          description: Search success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        landlordId:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                        price:
+                          type: integer
+                        description:
+                          type: string
+                        location:
+                          type: string
+                        facility:
+                          type: array
+                          items:
+                            type: string
+                        totalRooms:
+                          type: integer
+                        images:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              imageUrl:
+                                type: string
+                  total:
+                    type: integer
+                    example: 3
+        401:
+          description: Unauthorized
+
   /landlord/dashboard/kost/files/{userId}/{kostId}:
     post:
-      summary: Send images for kost
+      summary: Upload images for kost
       tags: [ Landlord ]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: kostId
+          in: path
+          required: true
+          description: ID kost
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: path
+          required: true
+          description: ID landlord
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - images
+              properties:
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Multiple image files (max 5 files)
+      responses:
+        200:
+          description: Images uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Images uploaded successfully
+                  images:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        kostId:
+                          type: string
+                          format: uuid
+                        imageUrl:
+                          type: string
+                          example: https://example.com/uploads/kost1.jpg
+        400:
+          description: Bad request - Invalid file format or size
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Unauthorized
+        404:
+          description: Kost not found
+
+  /landlord/dashboard/kost/{kostId}:
+    get:
+      summary: Get kost by ID
+      tags: [ Landlord ]
+      security:
+        - BearerAuth: []
       parameters:
         - name: kostId
           in: path
@@ -168,104 +449,76 @@ paths:
             type: string
             format: uuid
       responses:
-  /landlord/dashboard/kost?=:
-    get:
-      summary: Search kost by key
-      tags: [ Landlord ]
-      parameters:
-        - name: userId
-          in: header
-          required: true
-          description: ID landlord
-          schema:
-            type: string
-            format: uuid
-        - name: search key
-          in: query
-          required: true
-          description: Search kost by name
-          schema:
-            type: string
-      responses:
-  /landlord/dashboard/kost/{kostId}:
-    patch:
-      summary: Update kost
-      tags: [ Landlord ]
-      parameters:
-        - name: userId
-          in: header
-          required: true
-          description: ID landlord
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-      responses:
         200:
-          description: Login success
+          description: Get kost success
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  token:
+                  id:
                     type: string
-    delete:
-      summary: Delete by kost id
-      tags: [ Landlord ]
-      parameters:
-        - name: userId
-          in: header
-          required: true
-          description: ID landlord
-          schema:
-            type: string
-            format: uuid
-      responses:
-    get:
-      summary: Get by kost id
-      tags: [ Landlord ]
-      parameters:
-        - name: userId
-          in: header
-          required: true
-          description: ID landlord
-          schema:
-            type: string
-            format: uuid
-      responses:
+                    format: uuid
+                  landlordId:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  price:
+                    type: integer
+                  description:
+                    type: string
+                  location:
+                    type: string
+                  facility:
+                    type: array
+                    items:
+                      type: string
+                  totalRooms:
+                    type: integer
+                  images:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        imageUrl:
+                          type: string
+                  rooms:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        roomNumber:
+                          type: string
+                        status:
+                          type: string
+                          enum: [AVAILABLE, OCCUPIED]
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Not the owner
+        404:
+          description: Kost not found
 
-  /landlord/transaction:
-    get:
-      summary: Get all transaction
-      tags: [ Landlord ]
-      parameters:
-        - name: userId
-          in: header
-          required: true
-          description: ID landlord
-          schema:
-            type: string
-            format: uuid
-      responses:
-  /landlord/transaction/booking?=:
-    get:
-      summary: Search transaction
-      tags: [ Landlord ]
-      parameters:
-        - name: userId
-          in: header
-          required: true
-          description: ID landlord
-          schema:
-            type: string
-            format: uuid
-      responses:
-  /landlord/transaction/booking/{kostId}:
     patch:
-      summary: Edit booking status
+      summary: Update kost
       tags: [ Landlord ]
+      security:
+        - BearerAuth: []
       parameters:
+        - name: kostId
+          in: path
+          required: true
+          description: ID kost
+          schema:
+            type: string
+            format: uuid
         - name: userId
           in: header
           required: true
@@ -280,8 +533,776 @@ paths:
             schema:
               type: object
               properties:
-                email:
+                name:
                   type: string
-                password:
+                  example: Kost Pak Budi Updated
+                price:
+                  type: integer
+                  example: 1600000
+                description:
                   type: string
+                  example: Kost nyaman dengan fasilitas lengkap
+                location:
+                  type: string
+                  example: Jakarta Pusat
+                facilities:
+                  type: array
+                  items:
+                    type: string
+                    enum: [WIFI, AC, ENSUITE_BATHROOM, SHARED_BATHROOM]
+                  example: [WIFI, AC, ENSUITE_BATHROOM]
       responses:
+        200:
+          description: Update success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Kost berhasil diupdate
+                  kost:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                      price:
+                        type: integer
+                      description:
+                        type: string
+                      location:
+                        type: string
+                      facility:
+                        type: array
+                        items:
+                          type: string
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Not the owner
+        404:
+          description: Kost not found
+
+    delete:
+      summary: Delete kost by ID
+      tags: [ Landlord ]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: kostId
+          in: path
+          required: true
+          description: ID kost
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: header
+          required: true
+          description: ID landlord
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Delete success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Kost berhasil dihapus
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Not the owner
+        404:
+          description: Kost not found
+
+  /landlord/transaction:
+    get:
+      summary: Get all transactions for landlord
+      tags: [ Landlord ]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: header
+          required: true
+          description: ID landlord
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: false
+          description: Filter by booking status
+          schema:
+            type: string
+            enum: [PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED]
+      responses:
+        200:
+          description: Transactions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        roomId:
+                          type: string
+                          format: uuid
+                        kostPrice:
+                          type: integer
+                        tenantId:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum: [PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED]
+                        createdAt:
+                          type: string
+                          format: date-time
+                        room:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            roomNumber:
+                              type: string
+                            kostId:
+                              type: string
+                              format: uuid
+                        kost:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            name:
+                              type: string
+                            location:
+                              type: string
+                        tenant:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            email:
+                              type: string
+                  total:
+                    type: integer
+                    example: 15
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Not a landlord
+
+  /landlord/transaction/booking?=:
+    get:
+      summary: Search transaction
+      tags: [ Landlord ]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: header
+          required: true
+          description: ID landlord
+          schema:
+            type: string
+            format: uuid
+        - name: search
+          in: query
+          required: false
+          description: Search by tenant email or kost name
+          schema:
+            type: string
+            example: user@example.com
+      responses:
+        200:
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bookings:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        roomId:
+                          type: string
+                          format: uuid
+                        kostPrice:
+                          type: integer
+                        tenantId:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum: [PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED]
+                        createdAt:
+                          type: string
+                          format: date-time
+                        tenant:
+                          type: object
+                          properties:
+                            email:
+                              type: string
+                        kost:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                  total:
+                    type: integer
+        401:
+          description: Unauthorized
+
+  /landlord/transaction/booking/{kostId}:
+    patch:
+      summary: Update booking status
+      tags: [ Landlord ]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: kostId
+          in: path
+          required: true
+          description: ID booking
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: header
+          required: true
+          description: ID landlord
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [APPROVED, REJECTED, COMPLETED]
+                  example: APPROVED
+      responses:
+        200:
+          description: Booking status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Status booking berhasil diupdate
+                  booking:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      status:
+                        type: string
+                      roomId:
+                        type: string
+                        format: uuid
+                      tenantId:
+                        type: string
+                        format: uuid
+        400:
+          description: Bad request - Invalid status transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden - Not the owner
+        404:
+          description: Booking not found
+
+  /tenant/kost:
+    get:
+      summary: Get all kost for tenant (initial load, search, filter)
+      tags: [ Tenant ]
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: Search by kost name or location
+          schema:
+            type: string
+            example: Jakarta
+        - name: location
+          in: query
+          required: false
+          description: Filter by location
+          schema:
+            type: string
+            example: Jakarta Selatan
+        - name: minPrice
+          in: query
+          required: false
+          description: Minimum price filter
+          schema:
+            type: integer
+            example: 1000000
+        - name: maxPrice
+          in: query
+          required: false
+          description: Maximum price filter
+          schema:
+            type: integer
+            example: 3000000
+        - name: facilities
+          in: query
+          required: false
+          description: Filter by facilities (comma-separated)
+          schema:
+            type: string
+            example: WIFI,AC
+        - name: page
+          in: query
+          required: false
+          description: Page number for pagination
+          schema:
+            type: integer
+            default: 1
+            example: 1
+        - name: limit
+          in: query
+          required: false
+          description: Items per page
+          schema:
+            type: integer
+            default: 10
+            example: 10
+      responses:
+        200:
+          description: Kost list retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                          example: Kost Pak Budi
+                        price:
+                          type: integer
+                          example: 1500000
+                        location:
+                          type: string
+                          example: Jakarta Selatan
+                        facility:
+                          type: array
+                          items:
+                            type: string
+                          example: [WIFI, AC]
+                        totalRooms:
+                          type: integer
+                          example: 10
+                        availableRooms:
+                          type: integer
+                          example: 5
+                        images:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              imageUrl:
+                                type: string
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                        example: 1
+                      limit:
+                        type: integer
+                        example: 10
+                      total:
+                        type: integer
+                        example: 45
+                      totalPages:
+                        type: integer
+                        example: 5
+        400:
+          description: Bad request
+
+  /tenant/kost/{kostId}:
+    get:
+      summary: Get kost detail by ID
+      tags: [ Tenant ]
+      parameters:
+        - name: kostId
+          in: path
+          required: true
+          description: ID kost
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Kost detail retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  landlordId:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                    example: Kost Pak Budi
+                  price:
+                    type: integer
+                    example: 1500000
+                  description:
+                    type: string
+                    example: Kost nyaman dekat kampus
+                  location:
+                    type: string
+                    example: Jakarta Selatan
+                  facility:
+                    type: array
+                    items:
+                      type: string
+                    example: [WIFI, AC, ENSUITE_BATHROOM]
+                  totalRooms:
+                    type: integer
+                    example: 10
+                  images:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        imageUrl:
+                          type: string
+                  rooms:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        roomNumber:
+                          type: string
+                          example: A-101
+                        status:
+                          type: string
+                          enum: [AVAILABLE, OCCUPIED]
+                  landlord:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      email:
+                        type: string
+                        example: landlord@example.com
+        404:
+          description: Kost not found
+
+  /tenant/booking:
+    post:
+      summary: Create booking (order sekarang)
+      tags: [ Tenant ]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - roomId
+              properties:
+                roomId:
+                  type: string
+                  format: uuid
+                  description: ID room yang akan dibooking
+      responses:
+        201:
+          description: Booking created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bookingId:
+                    type: string
+                    format: uuid
+                  message:
+                    type: string
+                    example: Booking berhasil dibuat, menunggu persetujuan landlord
+                  booking:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      roomId:
+                        type: string
+                        format: uuid
+                      kostPrice:
+                        type: integer
+                      tenantId:
+                        type: string
+                        format: uuid
+                      status:
+                        type: string
+                        enum: [PENDING]
+                      createdAt:
+                        type: string
+                        format: date-time
+        400:
+          description: Bad request - Room not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Unauthorized
+        404:
+          description: Room not found
+
+  /tenant/bookings:
+    get:
+      summary: Get tenant booking history
+      tags: [ Tenant ]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter by booking status
+          schema:
+            type: string
+            enum: [PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED]
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: Bookings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bookings:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        roomId:
+                          type: string
+                          format: uuid
+                        kostPrice:
+                          type: integer
+                        tenantId:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum: [PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED]
+                        createdAt:
+                          type: string
+                          format: date-time
+                        room:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            roomNumber:
+                              type: string
+                            kostId:
+                              type: string
+                              format: uuid
+                        kost:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            name:
+                              type: string
+                            location:
+                              type: string
+                            images:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  imageUrl:
+                                    type: string
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      total:
+                        type: integer
+                      totalPages:
+                        type: integer
+        401:
+          description: Unauthorized
+
+  /tenant/notifications:
+    get:
+      summary: Get tenant notifications (approve / reject)
+      tags: [ Tenant ]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: isRead
+          in: query
+          required: false
+          description: Filter by read status
+          schema:
+            type: boolean
+            example: false
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        200:
+          description: Notifications retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notifications:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        bookingId:
+                          type: string
+                          format: uuid
+                        type:
+                          type: string
+                          enum: [BOOKING_APPROVED, BOOKING_REJECTED, BOOKING_CANCELLED]
+                          example: BOOKING_APPROVED
+                        message:
+                          type: string
+                          example: Booking Anda untuk Kost Pak Budi telah disetujui
+                        isRead:
+                          type: boolean
+                          example: false
+                        createdAt:
+                          type: string
+                          format: date-time
+                        booking:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            status:
+                              type: string
+                            kost:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                location:
+                                  type: string
+                  unreadCount:
+                    type: integer
+                    example: 3
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      total:
+                        type: integer
+                      totalPages:
+                        type: integer
+        401:
+          description: Unauthorized
