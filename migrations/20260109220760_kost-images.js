@@ -13,7 +13,7 @@ export const up = (pgm) => {
   pgm.createTable('kost_images', {
     id: "id",
     kost_id: { type: "id", notNull: true, references: 'kost(id)', onDelete: 'CASCADE' },
-    image_url: { type: "VARCHAR(255)", notNull: true },
+    image_url: { type: "TEXT", notNull: true },
     created_at: { type: 'timestamp', notNull: true, default: pgm.func('now()') },
     updated_at: { type: 'timestamp', notNull: true, default: pgm.func('now()') },
   })

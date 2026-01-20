@@ -1,30 +1,34 @@
 import authService from "../services/authService.js";
+import response from "../utils/response.js";
 
 const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
-    const result = await authService.login(email, password);
+    const { email, password } = req.body
+    const result = await authService.login(email, password)
 
-    res.status(200).send({
-      message: "Login success",
-      token: result.token,
-    });
+    await response(res, {
+      message: "Login sukses",
+      data: {
+        token: result
+      }
+    })
   } catch (e) {
-    console.error("[AUTH-CONTROLLER] error login: ", e);
+    console.error("[AUTH-CONTROLLER] error login: ", e)
     next(e)
   }
 }
 
 const register = async (req, res, next) => {
   try {
-    const { email, password, role } = req.body;
-    await authService.register(email, password, role);
+    const { email, password, role } = req.body
+    await authService.register(email, password, role)
 
-    res.status(201).send({
-      message: "Register success",
+    await response(res, {
+      code: 201,
+      message: "Register sukses"
     })
   } catch (e) {
-    console.error("[AUTH-CONTROLLER] error register: ", e);
+    console.error("[AUTH-CONTROLLER] error register: ", e)
     next(e)
   }
 }

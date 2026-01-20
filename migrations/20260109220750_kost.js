@@ -24,7 +24,7 @@ export const up = (pgm) => {
     price: { type: "INTEGER", notNull: true },
     description: { type: "TEXT", notNull: true },
     location: { type: "TEXT", notNull: true },
-    facilities: { type: "facilities_option", nullable: true  },
+    facilities: { type: "facilities_option[]", nullable: true  },
     total_rooms: { type: "INTEGER", notNull: true },
     created_at: { type: 'timestamp', notNull: true, default: pgm.func('now()') },
     updated_at: { type: 'timestamp', notNull: true, default: pgm.func('now()') },
