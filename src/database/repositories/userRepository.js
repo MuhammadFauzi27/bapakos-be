@@ -18,10 +18,10 @@ const create = async ({ email, password, role }) => {
   await pool.query(query)
 }
 
-const getById = async ({ id }) => {
+const getById = async ({ userId }) => {
   const query = {
-    text: `SELECT id, role FROM users WHERE id=$1`,
-    values: [id]
+    text: `SELECT * FROM users WHERE id=$1`,
+    values: [userId]
   }
   const result = await pool.query(query)
   return result.rows[0]

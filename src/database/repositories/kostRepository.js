@@ -1,9 +1,9 @@
 import pool from "../index.js";
 
-const getById = async ({ id }) => {
+const getById = async ({ kostId }) => {
   const query = {
     text: `SELECT * FROM kost WHERE id = $1`,
-    values: [id]
+    values: [kostId]
   }
   const result = await pool.query(query)
   return result.rows[0]
@@ -14,25 +14,47 @@ const findByName = async ({ name }) => {
 }
 
 const create = async ({
-  landlordId,
-  name,
-  price,
-  description,
-  location,
-  facilities,
-  totalRooms
-}) => {
+                        landlordId,
+                        name,
+                        price,
+                        description,
+                        location,
+                        facilities,
+                        totalRooms,
+                      }) => {
   const query = {
     text: `
-        INSERT INTO kost (landlord_id, name, price, description, location, facilities, total_rooms)
-        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id
+        INSERT INTO kost (
+            landlord_id,
+            name,
+            price,
+            description,
+            location,
+            facilities,
+            total_rooms,
+            available_rooms,
+            occupied_rooms
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING *
     `,
-    values: [landlordId, name, price, description, location, facilities ?? null, totalRooms]
+    values: [
+      landlordId,
+      name,
+      price,
+      description,
+      location,
+      facilities ?? null,
+      totalRooms,
+      totalRooms,
+      0
+    ]
   }
 
   const result = await pool.query(query)
   return result.rows[0]
 }
+
 
 const updatePartialById = async (client, { id, data }) => {
   const fields = []
@@ -87,7 +109,7 @@ const getAll = async (client) => {
         id,
         name,
         price,
-        address,
+        location,
         description,
         created_at
       FROM kost

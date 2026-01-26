@@ -8,18 +8,34 @@ import fs from "fs";
 const create = async (userId, body) => {
   const user = await userRepository.getById({ userId })
   if (!user) throw new AppError('Pengguna tidak ditemukan', 404)
-  if (user.role !== "LANDLORD") throw new AppError('Pengguna bukan seorang landlord', 400)
+  if (user.role !== 'LANDLORD') {
+    throw new AppError('Pengguna bukan seorang landlord', 403)
+  }
 
-  const [name, price, description, location, facilities, totalRooms] = body
-
-  return await kostRepository.create({
-    userId,
+  const {
     name,
     price,
     description,
     location,
     facilities,
-    totalRooms,
+    totalRooms
+  } = body
+
+  const normalizedFacilities =
+    facilities
+      ? Array.isArray(facilities)
+        ? facilities
+        : [facilities]
+      : null
+
+  return await kostRepository.create({
+    landlordId: userId,
+    name,
+    price,
+    description,
+    location,
+    facilities: normalizedFacilities,
+    totalRooms
   })
 }
 
@@ -50,15 +66,17 @@ const getById = async (kostId) => {
   const kost = await kostRepository.getById({ kostId })
   if (!kost) throw new AppError('Kost tidak ditemukan', 404)
 
-  const image = await fileRepository.getAllById({ kostId })
+  const image = await fileRepository.getAllByKostId({ kostId })
+  console.log(kost)
   return {
     id: kost.id,
+    landlordId: kost.landlord_id,
     name: kost.name,
     price: kost.price,
     description: kost.description,
     location: kost.location,
     facilities: kost.facilities,
-    totalRooms: kost.totalRooms,
+    totalRooms: kost.total_rooms,
     images: image
   }
 }
@@ -115,7 +133,7 @@ const getAllById = async (userId) => {
   const client = await pool.connect()
 
   try {
-    const kosts = await kostRepository.getAll({ userId })
+    const kosts = await kostRepository.getAllByUserId(client, { userId })
 
     if (!kosts.length) {
       return []
@@ -124,7 +142,7 @@ const getAllById = async (userId) => {
     const kostIds = kosts.map(k => k.id)
 
     const imagesGrouped =
-      await fileRepository.getAllGroupedByKostIds({ kostIds })
+      await fileRepository.getAllGroupedByKostIds(client, { kostIds })
 
     const imageMap = imagesGrouped.reduce((acc, row) => {
       acc[row.kost_id] = row.images

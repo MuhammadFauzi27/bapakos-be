@@ -11,7 +11,7 @@ landlordRoute.get("/dashboard/kost/:kostId", kostController.getKostById)
 landlordRoute.get("/transaction", landlordController.getAllBookings)
 // landlordRoute.get("/transaction/booking?=")
 
-landlordRoute.post("/dashboard/kost/files/:userId/:kostId", upload.single("image"), kostController.uploadImage)
+landlordRoute.post("/dashboard/kost/files/:kostId", upload.single("image"), kostController.uploadImage)
 landlordRoute.post("/dashboard/kost", kostController.createKost)
 
 landlordRoute.patch("/dashboard/kost/:kostId", kostController.updateKostById)

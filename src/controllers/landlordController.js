@@ -10,9 +10,7 @@ const updateBookingStatus = async (req, res, next) => {
     await response(res, {
       status: 200,
       message: "Berhasil update status booking",
-      data: {
-        result
-      }
+      data: result
     })
   } catch (e) {
     console.error("[LANDLORD-CONTROLLER] kesalahan mengubah status: ", e)
@@ -28,9 +26,7 @@ const getAllBookings = async (req, res, next) => {
     await response(res, {
       status: 200,
       message: "Berhasil get all booking",
-      data: {
-        result
-      }
+      data: result
     })
   } catch (e) {
     console.error("[LANDLORD-CONTROLLER] kesalahan get all booking: ", e)

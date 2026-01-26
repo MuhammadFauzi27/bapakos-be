@@ -12,7 +12,7 @@ const storage = multer.diskStorage({
 })
 
 const fileFilter = (req, file, cb) => {
-  if (!file.mimeType.startsWith("image/")) {
+  if (!file.mimetype.startsWith("image/")) {
     return cb(new Error("File harus gambar"))
   }
   cb(null, true)

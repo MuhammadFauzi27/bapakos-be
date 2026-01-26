@@ -22,7 +22,7 @@ const getAllByTenantId = async (tenantId) => {
 }
 
 const createBooking = async (tenantId, kost) => {
-  const user = await userRepository.getById({ tenantId})
+  const user = await userRepository.getById({ userId: tenantId })
   if (!user) {
     throw new AppError(`Pengguna ${tenantId} tidak ditemukan`, 404)
   }
@@ -35,7 +35,7 @@ const createBooking = async (tenantId, kost) => {
   const data = {
     kostId: query.id,
     tenantId: user.id,
-    landlordId: query.landlordId,
+    landlordId: query.landlord_id,
   }
 
   return await bookingRepository.create({data})

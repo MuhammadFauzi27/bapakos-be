@@ -5,33 +5,23 @@ import AppError from "../exceptions/appError.js";
 import pool from "../database/index.js";
 
 const uploadFile = async (userId, kostId, file) => {
-  if  (!file) throw new Error("Gambar wajib diupload")
+  if (!file) throw new AppError("Gambar wajib diupload", 400)
 
-  const imageId = await fileRepository.create({ kostId })
-
-  const baseDir = path.join(
-    "uploads",
-    "kost",
-    `${userId}`,
-    `${kostId}`,
-  )
-
+  const baseDir = path.join("uploads", "kost", `${userId}`, `${kostId}`)
   fs.mkdirSync(baseDir, { recursive: true })
 
   const ext = path.extname(file.originalname)
-  const fileName = `image-${imageId}${ext}`
-
+  const fileName = `image-${Date.now()}${ext}`
   const finalPath = path.join(baseDir, fileName)
 
   fs.renameSync(file.path, finalPath)
 
-  await fileRepository.update({ imageId, finalPath })
+  const imageUrl = finalPath.replace(/\\/g, "/")
 
-  return {
-    id: imageId,
-    kostId: kostId,
-    imageUrl: finalPath,
-  }
+  return await fileRepository.create({
+    kostId,
+    imageUrl
+  })
 }
 
 const updateById = async (kostId, body) => {

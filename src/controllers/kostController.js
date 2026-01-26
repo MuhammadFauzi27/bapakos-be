@@ -4,9 +4,10 @@ import kostService from "../services/kostService.js";
 
 const uploadImage = async (req, res, next) => {
   try {
+    console.log("uploads image: ", req.file);
     const userId = req.user.id;
     const kostId = req.params.kostId
-    const file = req.files
+    const file = req.file
     const result = await fileService.uploadFile(userId, kostId, file)
     await response(res, {
       status: 201,
@@ -16,7 +17,7 @@ const uploadImage = async (req, res, next) => {
       }
     })
   } catch (e) {
-    console.error("[KOST-CONTROLLER] kesalahan upload files: ", e)
+    console.error("[KOST-CONTROLLER] kesalahan uploads files: ", e)
     next(e)
   }
 }
@@ -24,15 +25,14 @@ const uploadImage = async (req, res, next) => {
 const createKost = async (req, res, next) => {
   try {
     const userId = req.user.id
+    console.log(userId);
     const body = req.body
 
     const result = await kostService.create(userId, body)
     await response(res, {
       status: 201,
       message: "Kost berhasil dibuat",
-      data: {
-        result
-      }
+      data: result
     })
   } catch (e) {
     console.error("[KOST-CONTROLLER] kesalahan membuat kost: ", e)
@@ -60,13 +60,11 @@ const getKostById = async (req, res, next) => {
   try {
     const kostId = req.params.kostId
     const result = await kostService.getById(kostId)
-
+    console.log(result)
     await response(res, {
       status: 200,
       message: "Kost berhasil ditemukan",
-      data: {
-        result
-      }
+      data: result
     })
   } catch (e) {
     console.error("[KOST-CONTROLLER] kesalahan get satu kost: ", e)
@@ -84,9 +82,7 @@ const updateKostById = async (req, res, next) => {
     await response(res, {
       status: 200,
       message: "Kost berhasil diupdate",
-      data: {
-        result
-      }
+      data: result
     })
   } catch (e) {
     console.error("[KOST-CONTROLLER] kesalahan update kost: ", e)
@@ -103,9 +99,7 @@ const getAllKosts = async (req, res, next) => {
     await response(res, {
       status: 200,
       message: "Kosst berhasil ditemukan",
-      data: {
-        result
-      }
+      data: result
     })
   } catch (e) {
     console.error("[KOST-CONTROLLER] kesalahan get all kost: ", e)

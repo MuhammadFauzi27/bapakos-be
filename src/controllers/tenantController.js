@@ -10,9 +10,7 @@ const getAllHistoryTransaction = async (req, res, next) => {
     await response(res, {
       status: 200,
       message: "Berhasil get all kost",
-      data: {
-        result
-      }
+      data: result
     })
   } catch (e) {
     console.error("[TENANT-CONTROLLER] kesalahan membuat booking: ", e)
@@ -33,9 +31,7 @@ const createBooking = async (req, res, next) => {
     await response(res, {
       status: 201,
       message: "Berhasil booking kost",
-      data: {
-        result
-      }
+      data: result
     })
   } catch (e) {
     console.error("[TENANT-CONTROLLER] kesalahan membuat booking: ", e)
@@ -50,9 +46,7 @@ const getAll = async (req, res, next) => {
     await response(res, {
       status: 200,
       message: "Berhasil get all kost",
-      data: {
-        result
-      }
+      data: result
     })
   } catch (e) {
     console.error("[TENANT-CONTROLLER] kesalahan get kost: ", e)

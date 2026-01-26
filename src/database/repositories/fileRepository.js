@@ -1,12 +1,17 @@
 import pool from "../index.js";
 
-const create = async ({ kostId }) => {
+const create = async ({ kostId, imageUrl }) => {
   const query = {
-    text:`INSERT INTO kost_images (kost_id, image_url) VALUES ($1, NULL) RETURNING id`,
-    values: [kostId]
+    text: `
+        INSERT INTO kost_images (kost_id, image_url)
+        VALUES ($1, $2)
+            RETURNING *
+    `,
+    values: [kostId, imageUrl]
   }
-  const result =  await pool.query(query)
-  return result.rows
+
+  const result = await pool.query(query)
+  return result.rows[0]
 }
 
 const update = async ({ id, path }) => {
