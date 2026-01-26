@@ -19,7 +19,17 @@ const getAllByTenantId = async ({ tenantId }) => {
 }
 
 const getAllByLandlordId = async ({ landlordId }) => {
-  const query = `SELECT * FROM bookings WHERE landlord_id = $1 ORDER BY created_at DESC`
+  const query = `
+      SELECT
+          b.*,
+          k.name AS kost_name,
+          k.location AS kost_location,
+          k.price AS kost_price
+      FROM bookings b
+               JOIN kost k ON b.kost_id = k.id
+      WHERE b.landlord_id = $1
+      ORDER BY b.created_at DESC
+  `
 
   const result = await pool.query(query, [landlordId])
   return result.rows

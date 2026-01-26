@@ -3,10 +3,10 @@ import bookingService from "../services/bookingService.js";
 
 const updateBookingStatus = async (req, res, next) => {
   try {
-    const kostId = req.params.kostId
+    const bookingId = req.params.bookingId
     const { status } = req.body
 
-    const result = await bookingService.updateBookingStatus(kostId, status)
+    const result = await bookingService.updateBookingStatus(bookingId, status)
     await response(res, {
       status: 200,
       message: "Berhasil update status booking",

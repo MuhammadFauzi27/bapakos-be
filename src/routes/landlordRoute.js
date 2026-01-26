@@ -15,7 +15,7 @@ landlordRoute.post("/dashboard/kost/files/:kostId", upload.single("image"), kost
 landlordRoute.post("/dashboard/kost", kostController.createKost)
 
 landlordRoute.patch("/dashboard/kost/:kostId", kostController.updateKostById)
-landlordRoute.patch("/transaction/booking/:kostId", landlordController.updateBookingStatus)
+landlordRoute.patch("/transaction/booking/:bookingId", landlordController.updateBookingStatus)
 
 landlordRoute.delete("/dashboard/kost/:kostId", kostController.deleteKost)
 
