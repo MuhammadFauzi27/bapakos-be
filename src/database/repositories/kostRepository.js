@@ -85,11 +85,10 @@ const updatePartialById = async (client, { id, data }) => {
 
 const deleteById = async ({ client, id }) => {
   const query = {
-    text: `DELETE FROM kost WHERE id = $1`,
+    text: `DELETE FROM kost WHERE id = $1 RETURNING *`,
     values: [id]
   }
-  const result = await client.query(query)
-  return result.rows
+  return await client.query(query)
 }
 
 const getAllByUserId = async (client, { userId }) => {

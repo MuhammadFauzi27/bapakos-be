@@ -3,7 +3,7 @@ import AppError from "../exceptions/appError.js";
 import kostRepository from "../database/repositories/kostRepository.js";
 import pool from "../database/index.js";
 import fileRepository from "../database/repositories/fileRepository.js";
-import fs from "fs";
+import { promises as fs } from 'fs'
 
 const create = async (userId, body) => {
   const user = await userRepository.getById({ userId })
@@ -41,22 +41,28 @@ const create = async (userId, body) => {
 
 const deleteById = async (kostId) => {
   const client = await pool.connect()
-  const kostImages = await fileRepository.getAllByKostId({ kostId })
-  if (!kostImages) throw new AppError('Kost tidak ditemukan', 404)
-
   try {
     await client.query('BEGIN')
 
+    const kostImages = await fileRepository.getAllByKostId({kostId})
+
+    // Hapus file gambar jika ada
     for (const img of kostImages) {
-      await fs.unlink(img.image_url).catch(err => {
-        if (err.code !== 'ENOENT') throw err
-      })
+      try {
+        await fs.unlink(img.image_url) // ini sekarang promise
+      } catch (err) {
+        if (err.code !== 'ENOENT') throw err // ignore file not found
+      }
     }
-    await kostRepository.deleteById({ client, kostId })
+
+    // Hapus kost
+    const result = await kostRepository.deleteById({client, id: kostId})
+    if (!result || result.rowCount === 0) throw new AppError('Kost tidak ditemukan', 404)
 
     await client.query('COMMIT')
   } catch (e) {
     await client.query('ROLLBACK')
+    throw e
   } finally {
     await client.release()
   }
