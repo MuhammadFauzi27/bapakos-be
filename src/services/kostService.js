@@ -1,6 +1,9 @@
 import userRepository from "../database/repositories/userRepository.js";
 import AppError from "../exceptions/appError.js";
 import kostRepository from "../database/repositories/kostRepository.js";
+import pool from "../database/index.js";
+import fileRepository from "../database/repositories/fileRepository.js";
+import fs from "fs";
 
 const create = async (userId, body) => {
   const user = await userRepository.getById({ userId })
@@ -20,6 +23,169 @@ const create = async (userId, body) => {
   })
 }
 
+const deleteById = async (kostId) => {
+  const client = await pool.connect()
+  const kostImages = await fileRepository.getAllById({ kostId })
+  if (!kostImages) throw new AppError('Kost tidak ditemukan', 404)
+
+  try {
+    await client.query('BEGIN')
+
+    for (const img of kostImages) {
+      await fs.unlink(img.image_url).catch(err => {
+        if (err.code !== 'ENOENT') throw err
+      })
+    }
+    await kostRepository.deleteById({ client, kostId })
+
+    await client.query('COMMIT')
+  } catch (e) {
+    await client.query('ROLLBACK')
+  } finally {
+    await client.release()
+  }
+}
+
+const getById = async (kostId) => {
+  const kost = await kostRepository.getById({ kostId })
+  if (!kost) throw new AppError('Kost tidak ditemukan', 404)
+
+  const image = await fileRepository.getAllById({ kostId })
+  return {
+    id: kost.id,
+    name: kost.name,
+    price: kost.price,
+    description: kost.description,
+    location: kost.location,
+    facilities: kost.facilities,
+    totalRooms: kost.totalRooms,
+    images: image
+  }
+}
+
+const updateById = async (kostId, body) => {
+  const kost = await kostRepository.getById({ kostId })
+  if (!kost) throw new AppError('Kost tidak ditemukan', 404)
+
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+
+    let kostResult = null
+    let imageResult = null
+
+    // update kost (selain image)
+    const { image_id, image_url, ...kostData } = body
+    if (Object.keys(kostData).length > 0) {
+      kostResult = await kostRepository.updatePartialById(client, {
+        id: kostId,
+        data: kostData
+      })
+    }
+
+    // update image (kalau ada)
+    if (image_id && image_url) {
+      imageResult = await fileRepository.updatePartialById(client, {
+        id: image_id,
+        data: { image_url }
+      })
+    }
+
+    await client.query('COMMIT')
+
+    return {
+      ...(kostResult && { kost: kostResult }),
+      ...(imageResult && { image: imageResult })
+    }
+
+  } catch (e) {
+    await client.query('ROLLBACK')
+    throw e
+  } finally {
+    await client.release()
+  }
+}
+
+const getAllById = async (userId) => {
+  const user = await userRepository.getById({ userId })
+  if (!user) {
+    throw new AppError('User tidak ditemukan atau bukan landlord', 404)
+  }
+
+  const client = await pool.connect()
+
+  try {
+    const kosts = await kostRepository.getAll({ userId })
+
+    if (!kosts.length) {
+      return []
+    }
+
+    const kostIds = kosts.map(k => k.id)
+
+    const imagesGrouped =
+      await fileRepository.getAllGroupedByKostIds({ kostIds })
+
+    const imageMap = imagesGrouped.reduce((acc, row) => {
+      acc[row.kost_id] = row.images
+      return acc
+    }, {})
+
+    return kosts.map(kost => ({
+      ...kost,
+      images: imageMap[kost.id] ?? []
+    }))
+  } catch (e) {
+    throw e
+  } finally {
+    client.release()
+  }
+}
+
+const getAllKost = async () => {
+  const client = await pool.connect()
+
+  try {
+    await client.query('BEGIN')
+
+    const kosts = await kostRepository.getAll(client)
+    if (!kosts.length) {
+      return []
+    }
+
+    const kostIds = kosts.map(k => k.id)
+
+    const imagesGrouped =
+      await fileRepository.getAllGroupedByKostIds(
+        client,
+        { kostIds }
+      )
+
+    const imageMap = {}
+    for (const row of imagesGrouped) {
+      imageMap[row.kost_id] = row.images
+    }
+
+    const result = kosts.map(kost => ({
+      ...kost,
+      images: imageMap[kost.id] || []
+    }))
+
+    await client.query('COMMIT')
+    return result
+  } catch (e) {
+    await client.query('ROLLBACK')
+    throw e
+  } finally {
+    client.release()
+  }
+}
+
 export default {
   create,
+  deleteById,
+  getById,
+  updateById,
+  getAllById,
+  getAllKost
 }

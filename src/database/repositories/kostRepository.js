@@ -1,10 +1,15 @@
 import pool from "../index.js";
 
-const findById = ({ id }) => {
-
+const getById = async ({ id }) => {
+  const query = {
+    text: `SELECT * FROM kost WHERE id = $1`,
+    values: [id]
+  }
+  const result = await pool.query(query)
+  return result.rows[0]
 }
 
-const findByName = ({ name }) => {
+const findByName = async ({ name }) => {
 
 }
 
@@ -29,18 +34,77 @@ const create = async ({
   return result.rows[0]
 }
 
-const updateById = ({ id, data }) => {
+const updatePartialById = async (client, { id, data }) => {
+  const fields = []
+  const values = []
+  let index = 1
 
+  for (const key in data) {
+    fields.push(`${key} = $${index}`)
+    values.push(data[key])
+    index++
+  }
+
+  if (fields.length === 0) return null
+
+  const query = `
+      UPDATE kost
+      SET
+          ${fields.join(', ')},
+          updated_at = now()
+      WHERE id = $${index}
+          RETURNING id, ${Object.keys(data).join(', ')}
+  `
+
+  const result = await client.query(query, [...values, id])
+  return result.rows[0]
 }
 
-const deleteById = ({ id }) => {
 
+const deleteById = async ({ client, id }) => {
+  const query = {
+    text: `DELETE FROM kost WHERE id = $1`,
+    values: [id]
+  }
+  const result = await client.query(query)
+  return result.rows
+}
+
+const getAllByUserId = async (client, { userId }) => {
+  const query = {
+    text: `SELECT * FROM kost WHERE landlord_id = $1`,
+    values: [userId]
+  }
+
+  const result = await client.query(query)
+  return result.rows
+}
+
+const getAll = async (client) => {
+  const query = {
+    text: `
+      SELECT 
+        id,
+        name,
+        price,
+        address,
+        description,
+        created_at
+      FROM kost
+      ORDER BY created_at DESC
+    `
+  }
+
+  const result = await client.query(query)
+  return result.rows
 }
 
 export default {
-  findById,
+  getById,
   findByName,
   create,
-  updateById,
+  updatePartialById,
   deleteById,
+  getAllByUserId,
+  getAll,
 }

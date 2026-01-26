@@ -6,7 +6,7 @@ const create = async ({ kostId }) => {
     values: [kostId]
   }
   const result =  await pool.query(query)
-  return result.rows[0].id
+  return result.rows
 }
 
 const update = async ({ id, path }) => {
@@ -15,10 +15,80 @@ const update = async ({ id, path }) => {
     values: [path, id]
   }
   const result =  await pool.query(query)
+  return result.rows[0]
+}
+
+const getAllByKostId = async ({ kostId }) => {
+  const query = {
+    text:`SELECT * FROM kost_images WHERE kost_id = $1`,
+    values: [kostId]
+  }
+  const result =  await pool.query(query)
   return result.rows
 }
 
+const deleteById = async ({ client, kostId }) => {
+  const query = {
+    text: `DELETE FROM kost_images WHERE kost_id = $1`,
+    values: [kostId]
+  }
+  const result =  await client.query(query)
+  return result.rows
+}
+
+const updatePartialById = async (client, { id, data }) => {
+  const fields = []
+  const values = []
+  let index = 1
+
+  for (const key in data) {
+    fields.push(`${key} = $${index}`)
+    values.push(data[key])
+    index++
+  }
+
+  if (fields.length === 0) return null
+
+  const query = `
+      UPDATE kost_images
+      SET
+          ${fields.join(', ')},
+          updated_at = now()
+      WHERE id = $${index}
+          RETURNING id, ${Object.keys(data).join(', ')}
+  `
+
+  const result = await client.query(query, [...values, id])
+  return result.rows[0]
+}
+
+const getAllGroupedByKostIds = async (client, { kostIds }) => {
+  if (!kostIds.length) return []
+
+  const query = {
+    text: `SELECT kost_id, json_agg(json_build_object(
+            'id', id,
+            'image_url', image_url,
+            'created_at', created_at
+          )
+        ) AS images
+      FROM kost_images
+      WHERE kost_id = ANY($1)
+      GROUP BY kost_id
+    `,
+    values: [kostIds]
+  }
+
+  const result = await client.query(query)
+  return result.rows
+}
+
+
 export default {
   create,
-  update
+  update,
+  getAllByKostId,
+  deleteById,
+  updatePartialById,
+  getAllGroupedByKostIds
 }

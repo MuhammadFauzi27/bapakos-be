@@ -1,13 +1,4 @@
-/**
- * @type {import('node-pg-migrate').ColumnDefinitions | undefined}
- */
 export const shorthands = undefined;
-
-/**
- * @param pgm {import('node-pg-migrate').MigrationBuilder}
- * @param run {() => void | undefined}
- * @returns {Promise<void> | void}
- */
 
 export const up = (pgm) => {
   pgm.createType("booking_status", [
@@ -18,24 +9,41 @@ export const up = (pgm) => {
     "COMPLETED"
   ])
 
-  pgm.createTable('rooms', {
+  pgm.createTable('bookings', {
     id: "id",
-    room_id: { type: "id", notNull: true, references: 'rooms(id)', onDelete: 'CASCADE' },
-    tenant_id: { type: "id", notNull: true, references: 'users(id)', onDelete: 'CASCADE' },
-    kost_price: { type: "INTEGER", notNull: true, references: 'kost(price)', onDelete: 'CASCADE' },
-    status: { type: "room_status", notNull: true, default: "AVAILABLE" },
+    kost_id: {
+      type: "id",
+      notNull: true,
+      references: 'kost(id)',
+      onDelete: 'CASCADE'
+    },
+    landlord_id: {
+      type: "id",
+      notNull: true,
+      references: 'users(id)',
+      onDelete: 'RESTRICT'
+    },
+    tenant_id: {
+      type: "id",
+      notNull: true,
+      references: 'users(id)',
+      onDelete: 'CASCADE'
+    },
+    status: {
+      type: "booking_status",
+      notNull: true,
+      default: "PENDING"
+    },
     created_at: { type: 'timestamp', notNull: true, default: pgm.func('now()') },
     updated_at: { type: 'timestamp', notNull: true, default: pgm.func('now()') },
   })
-};
 
-/**
- * @param pgm {import('node-pg-migrate').MigrationBuilder}
- * @param run {() => void | undefined}
- * @returns {Promise<void> | void}
- */
+  pgm.addIndex('bookings', ['tenant_id'])
+  pgm.addIndex('bookings', ['kost_id'])
+}
 
 export const down = (pgm) => {
   pgm.dropTable('bookings')
   pgm.dropType("booking_status")
-};
+}
+

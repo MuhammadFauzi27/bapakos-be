@@ -393,7 +393,77 @@ paths:
                   items:
                     type: string
                     format: binary
-                  description: Multiple image files (max 5 files)
+                  description: Multiple image files
+      responses:
+        200:
+          description: Images uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Images uploaded successfully
+                  images:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        kostId:
+                          type: string
+                          format: uuid
+                        imageUrl:
+                          type: string
+                          example: https://example.com/uploads/kost1.jpg
+        400:
+          description: Bad request - Invalid file format or size
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Unauthorized
+        404:
+          description: Kost not found
+    patch:
+      summary: Edit images for kost
+      tags: [ Landlord ]
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: kostId
+          in: path
+          required: true
+          description: ID kost
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: header
+          required: true
+          description: ID landlord
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - images
+              properties:
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Multiple image files
       responses:
         200:
           description: Images uploaded successfully

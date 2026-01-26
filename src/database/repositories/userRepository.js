@@ -2,12 +2,12 @@ import pool from "../index.js";
 
 const findByEmail = async ({ email }) => {
   const query = {
-    text: `SELECT email, password FROM users WHERE email=$1`,
+    text: `SELECT * FROM users WHERE email=$1`,
     values: [email]
   }
 
   const result = await pool.query(query)
-  return result.rows
+  return result.rows[0]
 }
 
 const create = async ({ email, password, role }) => {

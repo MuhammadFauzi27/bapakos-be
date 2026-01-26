@@ -9,7 +9,8 @@ const login = async (req, res, next) => {
     await response(res, {
       message: "Login sukses",
       data: {
-        token: result
+        token: result.token,
+        role: result.role
       }
     })
   } catch (e) {

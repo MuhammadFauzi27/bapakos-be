@@ -1,4 +1,4 @@
-import uploadFile from "../services/fileService.js";
+import fileService from "../services/fileService.js";
 import response from "../utils/response.js";
 import kostService from "../services/kostService.js";
 
@@ -7,7 +7,7 @@ const uploadImage = async (req, res, next) => {
     const userId = req.user.id;
     const kostId = req.params.kostId
     const file = req.files
-    const result = await uploadFile(userId, kostId, file)
+    const result = await fileService.uploadFile(userId, kostId, file)
     await response(res, {
       status: 201,
       message: "Upload gambar sukses",
@@ -40,7 +40,84 @@ const createKost = async (req, res, next) => {
   }
 }
 
+const deleteKost = async (req, res, next) => {
+  try {
+    const kostId = req.params.kostId
+
+    await kostService.deleteById(kostId)
+
+    await response(res, {
+      status: 200,
+      message: "Kost berhasil dihapus"
+    })
+  } catch (e) {
+    console.error("[KOST-CONTROLLER] kesalahan menghapus kost: ", e)
+    next(e)
+  }
+}
+
+const getKostById = async (req, res, next) => {
+  try {
+    const kostId = req.params.kostId
+    const result = await kostService.getById(kostId)
+
+    await response(res, {
+      status: 200,
+      message: "Kost berhasil ditemukan",
+      data: {
+        result
+      }
+    })
+  } catch (e) {
+    console.error("[KOST-CONTROLLER] kesalahan get satu kost: ", e)
+    next(e)
+  }
+}
+
+const updateKostById = async (req, res, next) => {
+  try {
+    const kostId = req.params.kostId
+    const body = req.body
+
+    const result = await kostService.updateById(kostId, body)
+
+    await response(res, {
+      status: 200,
+      message: "Kost berhasil diupdate",
+      data: {
+        result
+      }
+    })
+  } catch (e) {
+    console.error("[KOST-CONTROLLER] kesalahan update kost: ", e)
+    next(e)
+  }
+}
+
+const getAllKosts = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await kostService.getAllById(userId)
+
+    await response(res, {
+      status: 200,
+      message: "Kosst berhasil ditemukan",
+      data: {
+        result
+      }
+    })
+  } catch (e) {
+    console.error("[KOST-CONTROLLER] kesalahan get all kost: ", e)
+    next(e)
+  }
+}
+
 export default {
   uploadImage,
   createKost,
+  deleteKost,
+  getKostById,
+  updateKostById,
+  getAllKosts,
 }
