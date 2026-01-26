@@ -41,7 +41,7 @@ const create = async (userId, body) => {
 
 const deleteById = async (kostId) => {
   const client = await pool.connect()
-  const kostImages = await fileRepository.getAllById({ kostId })
+  const kostImages = await fileRepository.getAllByKostId({ kostId })
   if (!kostImages) throw new AppError('Kost tidak ditemukan', 404)
 
   try {
